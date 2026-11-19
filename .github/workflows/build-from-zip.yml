@@ -1,0 +1,40 @@
+
+name: Build TepungLootAll from ZIP
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'TepungLootAll-source.zip'
+      - '.github/workflows/build-from-zip.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Extract and build
+        run: |
+          mkdir extracted
+          unzip -q TepungLootAll-source.zip -d extracted
+          ROOT="$(find extracted -name build.gradle.kts -printf '%h\n' | head -n 1)"
+          test -n "$ROOT"
+          cd "$ROOT"
+          gradle clean build --no-daemon
+          mkdir -p "$GITHUB_WORKSPACE/output"
+          cp build/libs/*.jar "$GITHUB_WORKSPACE/output/"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TepungLootAll-JAR
+          path: output/*.jar
